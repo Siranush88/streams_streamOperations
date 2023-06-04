@@ -1,63 +1,53 @@
 import fs from 'node:fs';
 import { Transform } from 'stream';
-import * as readline from "readline";
 
+
+const pathOne = process.argv[2];
+const pathTwo = process.argv[3];
+const oper = process.argv[4];
 
 
 function streamOperation(inputPath, outputPath, operation) {
-
-    let uppercase;
-    let lowercase;
-    let reverse;
 
     let readStreamInput;
     let writeStreamOutput;
 
     const streamErrorMessage = "Some issue with streams.";
 
-    if (fs.existsSync(inputPath)) {
+    if (process.argv.length !== 5) {
+
+        console.log('Error, missing argument(s)...');
+
+    } else if (fs.existsSync(inputPath)) {
+
+        if (operation == 'uppercase') {
+            operation = new Transform({
+                transform(chunk, encoding, callback) {
+                    callback(null, chunk.toString().toUpperCase());
+                }
+            })
+        } else if (operation == 'lowercase') {
+            operation = new Transform({
+                transform(chunk, encoding, callback) {
+                    callback(null, chunk.toString().toLowerCase());
+                }
+            })
+        } else if (operation == 'reverse') {
+            operation = new Transform({
+                transform(chunk, encoding, callback) {
+                    callback(null, chunk.reverse());
+                }
+            })
+        } else {
+            console.log('Invalid Operation');
+            return;
+        }
 
         readStreamInput = fs.createReadStream(inputPath);
-
         writeStreamOutput = fs.createWriteStream(outputPath);
 
-
-        switch (operation) {
-
-            case 'uppercase':
-                uppercase = new Transform({
-                    transform(chunk, encoding, callback) {
-                        callback(null, chunk.toString().toUpperCase());
-                    }
-                })
-                return readStreamInput.pipe(uppercase).pipe(writeStreamOutput)
-                    .on('error', () => console.log(streamErrorMessage));
-
-
-            case 'lowercase':
-                lowercase = new Transform({
-                    transform(chunk, encoding, callback) {
-                        callback(null, chunk.toString().toLowerCase());
-                    }
-                })
-                return readStreamInput.pipe(lowercase).pipe(writeStreamOutput)
-                    .on('error', () => console.log(streamErrorMessage));
-
-
-
-            case 'reverse':
-                reverse = new Transform({
-                    transform(chunk, encoding, callback) {
-                        callback(null, chunk.reverse());
-                    }
-                })
-                return readStreamInput.pipe(reverse).pipe(writeStreamOutput)
-                    .on('error', () => console.log(streamErrorMessage));
-
-
-            default:
-                console.log('Invalid Operation');
-        }
+        return readStreamInput.pipe(operation).pipe(writeStreamOutput)
+            .on('error', () => console.log(streamErrorMessage));
 
 
     } else {
@@ -66,35 +56,11 @@ function streamOperation(inputPath, outputPath, operation) {
 
 }
 
+streamOperation(pathOne, pathTwo, oper);
 
 
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-})
 
 
-function createCommand(question) {
-    let answerArr = [];
 
-    rl.question(question, async (answer) => {
 
-        answerArr = answer.split(' ');
-
-        if (answerArr.length == 5 && answerArr[0] == 'node') { // && answerArr[1] == 'index.js'
-
-            streamOperation(answerArr[2], answerArr[3], answerArr[4]);
-
-        }
-
-        else if (answerArr.length !== 5) {
-            console.log('Error, missing argument(s)...');
-            //process.exit();
-        }
-        createCommand(question);
-    })
-
-}
-
-createCommand("Type command >> ");
